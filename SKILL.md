@@ -30,20 +30,22 @@ Key in environment (`ONEPRESS_API_KEY`), created at
 Submit a task — name the source deck if it exists in the user's OnePress
 workspace, or ask for deck + video together:
 
-```bash
-curl -s -X POST https://www.getonepress.com/api/v1/conversations \
-  -H "Authorization: Bearer $ONEPRESS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Create a narrated video of the deck at <path/topic>. ~<duration>, voice: <preference>.", "title": "<title>"}'
-# → 202 {"conversationId":"conv_..."}
+```
+POST https://www.getonepress.com/api/v1/conversations
+Authorization: Bearer $ONEPRESS_API_KEY
+Content-Type: application/json
+
+{"message": "Create a narrated video of the deck at <path/topic>. ~<duration>, voice: <preference>.", "title": "<title>"}
+→ 202 {"conversationId":"conv_..."}
 ```
 
 Poll until done (video tasks take several minutes — frames + audio + encode):
 
-```bash
-curl -s https://www.getonepress.com/api/v1/conversations/conv_... \
-  -H "Authorization: Bearer $ONEPRESS_API_KEY"
-# status "done" → answer + preview_path (e.g. "Video/xxx.mp4")
+```
+GET https://www.getonepress.com/api/v1/conversations/conv_...
+Authorization: Bearer $ONEPRESS_API_KEY
+
+→ status "done": answer + preview_path (e.g. "Video/xxx.mp4")
 ```
 
 Follow-ups (`POST` same id): "shorter", "different voice", "tighter pacing".

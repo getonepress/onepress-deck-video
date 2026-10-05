@@ -59,8 +59,24 @@ If `ONEPRESS_API_KEY` isn't set, offer to connect — the user never copies a ke
 
 ## How it works
 
-Submit a task — name the source deck if it exists in the user's OnePress
-workspace, or ask for deck + video together:
+If the source deck is a **local file**, upload it first, then reference the
+returned workspace path in the task:
+
+```
+POST https://www.getonepress.com/api/v1/files?name=deck.html&dir=Uploads
+Authorization: Bearer $ONEPRESS_API_KEY
+Content-Type: application/octet-stream
+
+<raw file bytes>          # `dir` optional, default "Uploads"
+
+→ 201 {"path":"Uploads/deck.html","name":"deck.html","size":1234}
+```
+
+Then `{"message": "Create a narrated video of the deck at Uploads/deck.html …"}`.
+Max 50MB. Personal workspace only.
+
+Submit a task — name the source deck path if it exists in the user's OnePress
+workspace (or was just uploaded), or ask for deck + video together:
 
 ```
 POST https://www.getonepress.com/api/v1/conversations
@@ -89,10 +105,14 @@ Authorization: Bearer $ONEPRESS_API_KEY
 → video/mp4 bytes, Content-Disposition: attachment
 ```
 
+If `preview_path` is null, fetch by workspace path:
+`GET /api/v1/files?path=Projects/.../video.mp4`.
+
 Follow-ups (`POST` same id): "shorter", "different voice", "tighter pacing".
 
 MCP alternative: `https://www.getonepress.com/api/mcp`, tools
-`onepress_create_task` / `onepress_task_status` / `onepress_list_tasks`.
+`onepress_create_task` / `onepress_task_status` / `onepress_list_tasks` /
+`onepress_upload_file` / `onepress_download_artifact` (base64 for file bytes).
 
 ## Report back
 

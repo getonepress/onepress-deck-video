@@ -1,7 +1,7 @@
 ---
 name: onepress-deck-video
-description: Turn a slide deck or topic into a narrated explainer video via OnePress — slides rendered to frames, AI narration, MP4 output. Requires a free ONEPRESS_API_KEY; submits the task, polls, and reports where the MP4 lives.
-version: 1.0.2
+description: Turn a slide deck or topic into a narrated explainer video via OnePress — slides rendered to frames, AI narration, MP4 download. Requires a free OnePress connection (browser-confirmed pairing, no key copying); submits the task, polls, downloads the MP4, and reports where it lives.
+version: 1.1.0
 ---
 
 # OnePress Deck Video
@@ -9,9 +9,10 @@ version: 1.0.2
 Produce narrated slide videos through [OnePress](https://www.getonepress.com) —
 explainer videos, narrated pitch decks, video versions of research briefings.
 
-**This skill requires `ONEPRESS_API_KEY`** — video synthesis runs on OnePress
-infrastructure (deck rendering, TTS, ffmpeg assembly). There is no local mode; if
-the key is missing, say so plainly and point the user to getonepress.com.
+**This skill requires a OnePress connection** — video synthesis runs on OnePress
+infrastructure (deck rendering, TTS, ffmpeg assembly). There is no local mode;
+if no key is configured, offer to connect (below) — the user just confirms in
+their browser.
 
 ## When to use
 
@@ -22,10 +23,41 @@ the key is missing, say so plainly and point the user to getonepress.com.
 For building the deck itself, use the `onepress-deck` skill (it also works
 locally without a key).
 
-## How it works
+## Connecting (no API key yet)
 
-Key in environment (`ONEPRESS_API_KEY`), created at
-**getonepress.com → app → Settings → Account → API keys** (`opk_…`).
+If `ONEPRESS_API_KEY` isn't set, offer to connect — the user never copies a key:
+
+1. Ask: "Want me to connect your OnePress account? You'll confirm it in the
+   browser — your password never touches me."
+2. On yes:
+
+   ```
+   POST https://www.getonepress.com/api/connect
+   Content-Type: application/json
+
+   {"client_name": "<your agent name>"}
+   → {"verification_url":"https://www.getonepress.com/connect?code=…",
+      "device_secret":"<64 hex>","expires_in":600,"interval":5}
+   ```
+
+3. Show `verification_url`; the user opens it, signs in (Google or verified
+   email), and taps **Allow**.
+4. Poll every `interval` seconds:
+
+   ```
+   POST https://www.getonepress.com/api/connect/poll
+   {"device_secret": "<from step 2>"}
+
+   → 202 {"status":"pending"} · 200 {"status":"connected","api_key":"opk_…"}
+   · {"status":"denied"} · {"status":"expired"} (start over)
+   ```
+
+5. Store `api_key` in the host's secret/env store as `ONEPRESS_API_KEY`. Never
+   ask the user to paste a key into chat, and never log it. Users can revoke it
+   anytime in OnePress Settings (or create one manually at
+   **Settings → Account → API keys**).
+
+## How it works
 
 Submit a task — name the source deck if it exists in the user's OnePress
 workspace, or ask for deck + video together:
@@ -48,6 +80,15 @@ Authorization: Bearer $ONEPRESS_API_KEY
 → status "done": answer + preview_path (e.g. "Video/xxx.mp4")
 ```
 
+When done, download the MP4 and save it to the user's working directory:
+
+```
+GET https://www.getonepress.com/api/v1/conversations/conv_.../artifact
+Authorization: Bearer $ONEPRESS_API_KEY
+
+→ video/mp4 bytes, Content-Disposition: attachment
+```
+
 Follow-ups (`POST` same id): "shorter", "different voice", "tighter pacing".
 
 MCP alternative: `https://www.getonepress.com/api/mcp`, tools
@@ -56,8 +97,9 @@ MCP alternative: `https://www.getonepress.com/api/mcp`, tools
 ## Report back
 
 - `answer` — the agent's summary
-- `preview_path` — **a path, not a URL**; the MP4 lives at
-  https://www.getonepress.com/app (preview/download/share there)
+- The **local path** where you saved the MP4 (fetched via the artifact
+  endpoint); it also lives at https://www.getonepress.com/app (preview/share
+  there)
 - Conversation id/title
 
 ## Errors

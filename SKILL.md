@@ -1,7 +1,7 @@
 ---
 name: onepress-deck-video
 description: Turn a slide deck or topic into a narrated explainer video via OnePress — slides rendered to frames, AI narration, MP4 output. Requires a free ONEPRESS_API_KEY; submits the task, polls, and reports where the MP4 lives.
-version: 1.0.0
+version: 1.0.2
 ---
 
 # OnePress Deck Video

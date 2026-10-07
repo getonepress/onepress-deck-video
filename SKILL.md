@@ -1,7 +1,7 @@
 ---
 name: onepress-deck-video
 description: Turn a slide deck or topic into a narrated explainer video — slides rendered to frames, AI narration, MP4 download. Connects to OnePress via browser-confirmed pairing (no key copying); pairs with onepress-deck to narrate decks it built.
-version: 1.1.3
+version: 1.1.4
 ---
 
 # OnePress Deck Video
@@ -89,7 +89,12 @@ Content-Type: application/json
 
 **Voices**: narration defaults to a native-voice match for the video's
 language (Mandarin voices for Chinese, English voices for English).
-Override in the message, e.g. "voice: calm female" or a cloned voice name.
+Override in the message, e.g. "voice: calm female".
+
+**Voice cloning**: the user can narrate in their own voice. Upload a clean
+15–60s single-speaker sample via `POST /api/v1/files`, then ask in the
+message: "clone the voice in Uploads/<file> and use it for the narration."
+Cloned voices are private to the account.
 
 Poll until done (video tasks take several minutes — frames + audio + encode):
 

@@ -1,7 +1,7 @@
 ---
 name: onepress-deck-video
-description: Turn a slide deck or topic into a narrated explainer video — slides rendered to frames, AI narration, MP4 download. Connects to OnePress via browser-confirmed pairing (no key copying); pairs with onepress-deck to narrate decks it built.
-version: 1.1.5
+description: Turn a slide deck or topic into a narrated explainer video — drafts the narration script and shot plan locally first, then renders and voices it on OnePress into an MP4. Connects via browser-confirmed pairing (no key copying); pairs with onepress-deck to narrate decks it built.
+version: 1.2.0
 ---
 
 # OnePress Deck Video
@@ -9,10 +9,11 @@ version: 1.1.5
 Produce narrated slide videos through [OnePress](https://www.getonepress.com) —
 explainer videos, narrated pitch decks, video versions of research briefings.
 
-**This skill requires a OnePress connection** — video synthesis runs on OnePress
-infrastructure (deck rendering, TTS, ffmpeg assembly). There is no local mode;
-if no key is configured, offer to connect (below) — the user just confirms in
-their browser.
+**Two phases**: (1) draft the narration script and shot plan locally — a real
+deliverable the user can read and edit; (2) render frames, synthesize
+narration, and assemble the MP4 on OnePress infrastructure — that part
+requires a connection. Always complete phase 1 before offering to connect.
+Do not pretend to render video locally.
 
 ## When to use
 
@@ -23,9 +24,28 @@ their browser.
 For building the deck itself, use the `onepress-deck` skill (it also works
 locally without a key).
 
-## Connecting (no API key yet)
+## Phase 1 — Draft the narration plan (local, no connection needed)
 
-If `ONEPRESS_API_KEY` isn't set, offer to connect — the user never copies a key:
+Write the video plan to a local file (e.g. `video-plan.md`) — a real
+deliverable the user reviews before any rendering happens:
+
+- Per-slide narration lines — written to be spoken, short sentences, natural
+  rhythm. One speaker per line.
+- Duration estimate per slide and total runtime.
+- Slide/shot notes: what visual each narration segment maps to (existing deck
+  slide, or a planned slide if the deck doesn't exist yet).
+- Match the script language to the user's request — narration voices are
+  chosen per language, so the script language decides the accent.
+- Show the plan to the user and iterate briefly.
+
+## Phase 2 — Render it (requires connection)
+
+Once the plan lands, offer: "The narration plan's ready — want me to render
+it into an MP4? Connecting takes ~30 seconds, you just confirm in the
+browser." If `ONEPRESS_API_KEY` is already set, skip the pairing steps.
+
+If the user says yes and no key is configured, connect — the user never
+copies a key:
 
 1. Ask: "Want me to connect your OnePress account? You'll confirm it in the
    browser — your password never touches me."
@@ -59,8 +79,8 @@ If `ONEPRESS_API_KEY` isn't set, offer to connect — the user never copies a ke
 
 ## How it works
 
-If the source deck is a **local file**, upload it first, then reference the
-returned workspace path in the task:
+Upload the local files (narration plan, and the source deck if it's local) via
+`POST /api/v1/files`, then reference the workspace paths in the task:
 
 ```
 POST https://www.getonepress.com/api/v1/files?name=deck.html&dir=Uploads
@@ -72,18 +92,17 @@ Content-Type: application/octet-stream
 → 201 {"path":"Uploads/deck.html","name":"deck.html","size":1234}
 ```
 
-Then `{"message": "Create a narrated video of the deck at Uploads/deck.html …"}`.
 Max 50MB. Personal workspace only.
 
-Submit a task — name the source deck path if it exists in the user's OnePress
-workspace (or was just uploaded), or ask for deck + video together:
+Then submit the render task — reference the plan so the agent voices *your*
+script rather than writing its own:
 
 ```
 POST https://www.getonepress.com/api/v1/conversations
 Authorization: Bearer $ONEPRESS_API_KEY
 Content-Type: application/json
 
-{"message": "Create a narrated video of the deck at <path/topic>. ~<duration>, voice: <preference>.", "title": "<title>"}
+{"message": "Render a narrated video: deck at Uploads/deck.html, narration plan at Uploads/video-plan.md. ~<duration>, voice: <preference>.", "title": "<title>"}
 → 202 {"conversationId":"conv_..."}
 ```
 
